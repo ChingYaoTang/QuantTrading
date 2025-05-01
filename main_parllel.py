@@ -130,15 +130,15 @@ def main(Population_size, Generation_num, Threshold, df_list):
     # Operators
     num_cpus = multiprocessing.cpu_count() - 1
     print("num_cpus = ", num_cpus)
-    #pool = multiprocessing.Pool(processes=num_cpus)
-    #toolbox.register("map", pool.imap)
-    toolbox.register("map", map)  # 直接使用內建 map 函數
+    pool = multiprocessing.Pool(processes=num_cpus)
+    toolbox.register("map", pool.imap)
+    #toolbox.register("map", map)  # 直接使用內建 map 函數
 
 
     # Use Manager to create a shared dictionary
-    #manager = multiprocessing.Manager()
-    #eval_dict = manager.dict()
-    eval_dict = dict()
+    manager = multiprocessing.Manager()
+    eval_dict = manager.dict()
+    #eval_dict = dict()
 
     # Pass eval_dict to the evaluate function
     toolbox.register("evaluate", eval, df_list=df_list, eval_dict=eval_dict)
@@ -164,8 +164,8 @@ def main(Population_size, Generation_num, Threshold, df_list):
         print("-- Generation %i --" % g)
 
         offspring = toolbox.select(pop, len(pop))
-        #offspring = list(pool.imap(toolbox.clone, offspring))
-        offspring = list(map(toolbox.clone, offspring))
+        offspring = list(pool.imap(toolbox.clone, offspring))
+        #offspring = list(map(toolbox.clone, offspring))
 
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
             if random.random() < CXPB:
