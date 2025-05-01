@@ -33,17 +33,17 @@ finlab.login(token)
 
 close = data.get("price:收盤價")
 close_pct_change = close.pct_change()
-adj_close = data.get('etl:adj_close')
-vol_stock = data.get('price:成交股數')
-vol = data.get("price:成交金額")
-rev = data.get('monthly_revenue:當月營收')
+#adj_close = data.get('etl:adj_close')
+#vol_stock = data.get('price:成交股數')
+#vol = data.get("price:成交金額")
+#rev = data.get('monthly_revenue:當月營收')
 rev_year_growth = data.get('monthly_revenue:去年同月增減(%)')
-rev_month_growth =  data.get('monthly_revenue:上月比較增減(%)')
-ma5 = close.average(5)
-ma20 = close.average(20)
+#rev_month_growth =  data.get('monthly_revenue:上月比較增減(%)')
+#ma5 = close.average(5)
+#ma20 = close.average(20)
 ma60 = close.average(60)
-vol_ma20 = vol.average(20)
-vol_stock_ma20 = vol_stock.average(20)
+#vol_ma20 = vol.average(20)
+#vol_stock_ma20 = vol_stock.average(20)
 RS = close_pct_change.clip(lower=0).rolling(20).sum() / abs(close_pct_change.clip(upper=0).rolling(20).sum())
 RSI = 100 - 100 / (1 + RS)
 
@@ -73,13 +73,11 @@ RSI = 100 - 100 / (1 + RS)
 #fcf_aa = fcf.rolling(6).min() > 0
 
 cd1 = (((close - ma60)/ma60) > 0.05)
-cd2 = (((vol_stock - vol_stock_ma20)/vol_stock_ma20) > 0.5)
-cd3 = (((vol - vol_ma20)/vol_ma20) > 0.3)
-cd4 = ((RSI < 70) & (RSI > 30))
-cd5 = (rev_year_growth > 10)
+cd2 = ((RSI < 70) & (RSI > 30))
+cd3 = (rev_year_growth > 10)
 
 #df_list = [monthly_revenue_grow_aa, operating_profit_aa, net_income_grow_aa, eps_aa, stock_turnover_aa, fcf_aa]
-df_list = [cd1,cd2,cd3,cd4,cd5]
+df_list = [cd1,cd2,cd3]
 
 ############
 # Evaluating function
@@ -131,13 +129,16 @@ def main(Population_size, Generation_num, Threshold, df_list):
 
     # Operators
     num_cpus = multiprocessing.cpu_count() - 1
-    pool = multiprocessing.Pool(processes=num_cpus)
-    toolbox.register("map", pool.imap)
+    print("num_cpus = ", num_cpus)
+    #pool = multiprocessing.Pool(processes=num_cpus)
+    #toolbox.register("map", pool.imap)
+    toolbox.register("map", map)  # 直接使用內建 map 函數
 
 
     # Use Manager to create a shared dictionary
-    manager = multiprocessing.Manager()
-    eval_dict = manager.dict()
+    #manager = multiprocessing.Manager()
+    #eval_dict = manager.dict()
+    eval_dict = dict()
 
     # Pass eval_dict to the evaluate function
     toolbox.register("evaluate", eval, df_list=df_list, eval_dict=eval_dict)
@@ -163,7 +164,8 @@ def main(Population_size, Generation_num, Threshold, df_list):
         print("-- Generation %i --" % g)
 
         offspring = toolbox.select(pop, len(pop))
-        offspring = list(pool.imap(toolbox.clone, offspring))
+        #offspring = list(pool.imap(toolbox.clone, offspring))
+        offspring = list(map(toolbox.clone, offspring))
 
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
             if random.random() < CXPB:
@@ -205,4 +207,5 @@ Population_size = 30
 Generation_num = 5
 Threshold = 30
 
-result = main(Population_size, Generation_num, Threshold, df_list)
+if __name__ == '__main__':
+    result = main(Population_size, Generation_num, Threshold, df_list)
